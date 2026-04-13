@@ -1,0 +1,41 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Ritwik Chaturvedi\.gemini\antigravity\scratch\sbm-fx-engine
+plugins: anyio-4.12.1
+collected 38 items
+
+engine\tests\test_anomaly.py ..................ssssss....FFF.......      [100%]
+
+================================== FAILURES ===================================
+_____________ TestEnsembleAnomalyDetector.test_train_and_predict ______________
+engine\tests\test_anomaly.py:364: in test_train_and_predict
+    ensemble.train(features)
+engine\models\anomaly_detector.py:274: in train
+    results = self.predict(features)
+              ^^^^^^^^^^^^^^^^^^^^^^
+engine\models\anomaly_detector.py:288: in predict
+    raise RuntimeError(
+E   RuntimeError: EnsembleAnomalyDetector has not been trained. Call train() first.
+__________ TestEnsembleAnomalyDetector.test_normalized_scores_range ___________
+engine\tests\test_anomaly.py:376: in test_normalized_scores_range
+    ensemble.train(features)
+engine\models\anomaly_detector.py:274: in train
+    results = self.predict(features)
+              ^^^^^^^^^^^^^^^^^^^^^^
+engine\models\anomaly_detector.py:288: in predict
+    raise RuntimeError(
+E   RuntimeError: EnsembleAnomalyDetector has not been trained. Call train() first.
+___________ TestEnsembleAnomalyDetector.test_detects_some_anomalies ___________
+engine\tests\test_anomaly.py:388: in test_detects_some_anomalies
+    ensemble.train(features)
+engine\models\anomaly_detector.py:274: in train
+    results = self.predict(features)
+              ^^^^^^^^^^^^^^^^^^^^^^
+engine\models\anomaly_detector.py:288: in predict
+    raise RuntimeError(
+E   RuntimeError: EnsembleAnomalyDetector has not been trained. Call train() first.
+=========================== short test summary info ===========================
+FAILED engine/tests/test_anomaly.py::TestEnsembleAnomalyDetector::test_train_and_predict
+FAILED engine/tests/test_anomaly.py::TestEnsembleAnomalyDetector::test_normalized_scores_range
+FAILED engine/tests/test_anomaly.py::TestEnsembleAnomalyDetector::test_detects_some_anomalies
+================== 3 failed, 29 passed, 6 skipped in 13.83s ===================

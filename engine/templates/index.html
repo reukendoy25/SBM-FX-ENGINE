@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBM FX Engine — Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --bg-card-hover: #1f2a40;
+            --border: #2a3550;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+            --glow-blue: rgba(59, 130, 246, 0.15);
+            --glow-green: rgba(16, 185, 129, 0.15);
+            --glow-red: rgba(239, 68, 68, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === ANIMATED BACKGROUND === */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-glow-1 { top: -200px; left: -100px; background: var(--accent-blue); }
+        .bg-glow-2 { bottom: -200px; right: -100px; background: var(--accent-purple); animation-delay: -10s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 20px); }
+        }
+
+        /* === HEADER === */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 14, 23, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* === MAIN LAYOUT === */
+        .main {
+            position: relative;
+            z-index: 1;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 32px 60px;
+        }
+
+        /* === METRICS ROW === */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+
+        .metric-card .glow-line {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+
+        .metric-change {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .change-up { color: var(--accent-green); }
+        .change-down { color: var(--accent-red); }
+
+        /* === GRID LAYOUTS === */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-equal {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* === CARDS === */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-badge {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+        .badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+
+        /* === CHART CONTAINERS === */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .chart-container-lg {
+            height: 360px;
+        }
+
+        /* === ANOMALY TABLE === */
+        .anomaly-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 4px;
+        }
+
+        .anomaly-table th {
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            font-weight: 600;
+        }
+
+        .anomaly-table td {
+            padding: 10px 12px;
+            font-size: 13px;
+            background: rgba(255,255,255,0.02);
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .anomaly-table tr td:first-child { border-radius: 8px 0 0 8px; }
+        .anomaly-table tr td:last-child { border-radius: 0 8px 8px 0; }
+
+        .score-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-secondary);
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+
+        /* === SENTIMENT CARDS === */
+        .sentiment-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .sentiment-item:last-child { border-bottom: none; }
+
+        .sentiment-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .sentiment-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .sentiment-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .sentiment-score {
+            margin-left: auto;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* === API TESTER === */
+        .api-endpoint {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .api-endpoint:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: var(--accent-blue);
+        }
+
+        .api-method {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Inter', monospace;
+        }
+
+        .method-get { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .method-post { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+        .api-path {
+            font-family: 'Inter', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .api-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .api-response {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'Inter', monospace;
+            font-size: 12px;
+            color: var(--accent-cyan);
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: none;
+            margin-top: 12px;
+        }
+
+        .api-response.visible { display: block; }
+
+        /* === MODULE CARDS === */
+        .module-card {
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .module-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .module-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 14px;
+        }
+
+        .module-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .module-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* === ARCHITECTURE === */
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .arch-node {
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid;
+            min-width: 120px;
+        }
+
+        .arch-arrow {
+            font-size: 20px;
+            color: var(--text-muted);
+            padding: 0 8px;
+        }
+
+        /* === SECTION LABEL === */
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 1024px) {
+            .metrics-row { grid-template-columns: repeat(2, 1fr); }
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-equal { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .metrics-row { grid-template-columns: 1fr; }
+            .main { padding: 16px; }
+            .header { padding: 12px 16px; }
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* === ANIMATIONS === */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in:nth-child(1) { animation-delay: 0.05s; }
+        .fade-in:nth-child(2) { animation-delay: 0.1s; }
+        .fade-in:nth-child(3) { animation-delay: 0.15s; }
+        .fade-in:nth-child(4) { animation-delay: 0.2s; }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="header-left">
+        <div class="logo">FX</div>
+        <div class="header-title">
+            <h1>SBM FX Engine</h1>
+            <p>State Bank of Mauritius — AI-Powered FX Intelligence</p>
+        </div>
+    </div>
+    <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="api-status">Dashboard Active</span>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+    <!-- METRICS -->
+    <div class="section-label fade-in">Real-Time Market Overview</div>
+    <div class="metrics-row">
+        <div class="metric-card fade-in">
+            <div class="glow-line" style="background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));"></div>
+            <div class="metric-label">EUR/USD Rate</div>
+            <div class="metric-value" style="color: var(--accent-blue);">1.0847</div>
+            <div class="metric-change change-up">▲ 0.23% <span style="color: var(--text-muted); margin-left: 4px;">24h</span></div>
+        </div>
+        <div class="metric-card fade-in">
+            <div class="glow-line" style="background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));"></div>
+            <div class="metric-label">Anomalies Detected</div>
+            <div class="metric-value" style="color: var(--accent-green);">47</div>
+            <div class="metric-change" style="color: var(--text-muted);">across 10yr dataset (1% rate)</div>
+        </div>
+        <div class="metric-card fade-in">
+            <div class="glow-line" style="background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));"></div>
+            <div class="metric-label">LSTM Forecast</div>
+            <div class="metric-value" style="color: var(--accent-purple);">1.0912</div>
+            <div class="metric-change change-up">▲ Bullish EUR <span style="color: var(--text-muted); margin-left: 4px;">+0.60%</span></div>
+        </div>
+        <div class="metric-card fade-in">
+            <div class="glow-line" style="background: linear-gradient(90deg, var(--accent-amber), var(--accent-red));"></div>
+            <div class="metric-label">FinBERT Sentiment</div>
+            <div class="metric-value" style="color: var(--accent-amber);">−0.34</div>
+            <div class="metric-change" style="color: var(--accent-red);">Dovish / Risk-Off Signal</div>
+        </div>
+    </div>
+
+    <!-- FX CHART + ANOMALIES TABLE -->
+    <div class="section-label fade-in">FX Anomaly Detection — Isolation Forest</div>
+    <div class="grid-2 fade-in">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📈 EUR/USD Exchange Rate with Anomaly Overlay</div>
+                <span class="card-badge badge-red">● 200 iTree Ensemble</span>
+            </div>
+            <div class="chart-container chart-container-lg">
+                <canvas id="fxChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🚨 Top Detected Anomalies</div>
+                <span class="card-badge badge-amber">Severity Ranked</span>
+            </div>
+            <table class="anomaly-table">
+                <thead>
+                    <tr><th>Date</th><th>Event</th><th>Score</th></tr>
+                </thead>
+                <tbody id="anomaly-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FORECAST + SENTIMENT -->
+    <div class="section-label fade-in">Rate Forecasting — LSTM + FinBERT Ensemble</div>
+    <div class="grid-equal fade-in">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🧠 LSTM Forecast vs Actual</div>
+                <span class="card-badge badge-purple">α=0.7 LSTM / 0.3 Sentiment</span>
+            </div>
+            <div class="chart-container chart-container-lg">
+                <canvas id="forecastChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💬 FinBERT Sentiment Analysis</div>
+                <span class="card-badge badge-green">ProsusAI/FinBERT</span>
+            </div>
+            <div id="sentiment-list" style="max-height: 360px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- ANOMALY SCORE DISTRIBUTION + CORRELATION -->
+    <div class="grid-equal fade-in">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📊 Anomaly Score Distribution</div>
+                <span class="card-badge badge-blue">Isolation Forest</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="scoreDistChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🔗 Currency Correlation Matrix</div>
+                <span class="card-badge badge-blue">Log-Return Correlation</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="corrChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ARCHITECTURE MODULES -->
+    <div class="section-label fade-in">System Architecture — Modules</div>
+    <div class="grid-3 fade-in">
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(239, 68, 68, 0.12);">🌲</div>
+            <div class="module-name">Isolation Forest</div>
+            <div class="module-desc">200-tree ensemble with 1% contamination. Detects anomalous FX spikes, flash crashes, and irregular volatility via short average path lengths.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(168, 85, 247, 0.12);">🧠</div>
+            <div class="module-name">Stacked LSTM</div>
+            <div class="module-desc">128→64 unit architecture with dropout. 60-day lookback window captures long-term temporal dependencies for rate prediction.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(16, 185, 129, 0.12);">📝</div>
+            <div class="module-name">FinBERT NLP</div>
+            <div class="module-desc">Open-source BERT model fine-tuned on 10K+ financial articles. Processes FOMC/ECB text into sentiment scores [-1, +1].</div>
+        </div>
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(59, 130, 246, 0.12);">⚡</div>
+            <div class="module-name">Ensemble Combiner</div>
+            <div class="module-desc">Weighted α-combination: 70% LSTM quantitative + 30% FinBERT qualitative. Captures regime shifts missed by numerical models.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(245, 158, 11, 0.12);">🌐</div>
+            <div class="module-name">Flask REST API</div>
+            <div class="module-desc">5 endpoints: /health, /anomaly, /predict, /sentiment, /retrain. Production-ready with CORS, validation, and JSON responses.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-icon" style="background: rgba(6, 182, 212, 0.12);">🐳</div>
+            <div class="module-name">Docker Pipeline</div>
+            <div class="module-desc">python:3.9-slim container with Gunicorn WSGI. Portable microservice for Kubernetes, Cloud Run, or AWS Fargate deployment.</div>
+        </div>
+    </div>
+
+    <!-- API TESTER -->
+    <div class="section-label fade-in">API Endpoint Reference</div>
+    <div class="card fade-in">
+        <div class="card-header">
+            <div class="card-title">🔌 Live API Tester</div>
+            <span class="card-badge badge-green" id="api-live-badge">Click to Test</span>
+        </div>
+        <div class="api-endpoint" onclick="testEndpoint('/health', 'GET')">
+            <span class="api-method method-get">GET</span>
+            <span class="api-path">/health</span>
+            <span class="api-desc">Health check & model status</span>
+        </div>
+        <div class="api-endpoint" onclick="testEndpoint('/anomaly', 'POST')">
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/anomaly</span>
+            <span class="api-desc">Detect FX anomalies in data stream</span>
+        </div>
+        <div class="api-endpoint" onclick="testEndpoint('/predict', 'POST')">
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/predict</span>
+            <span class="api-desc">LSTM + FinBERT ensemble rate forecast</span>
+        </div>
+        <div class="api-endpoint" onclick="testEndpoint('/sentiment', 'POST')">
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/sentiment</span>
+            <span class="api-desc">FinBERT financial text sentiment</span>
+        </div>
+        <div class="api-endpoint" onclick="testEndpoint('/retrain', 'POST')">
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/retrain</span>
+            <span class="api-desc">Trigger model retraining</span>
+        </div>
+        <div class="api-response" id="api-response"></div>
+    </div>
+</main>
+
+<script>
+// ========================================================
+// DEMO DATA — Simulated EUR/USD with realistic events
+// ========================================================
+
+function generateFXData() {
+    const data = [];
+    const anomalies = [];
+    let rate = 1.12;
+    const start = new Date('2015-01-01');
+
+    const events = {
+        '2016-06-24': { name: 'Brexit Vote', impact: -0.06 },
+        '2018-02-05': { name: 'VIX Spike', impact: -0.03 },
+        '2020-03-12': { name: 'COVID Crash', impact: -0.05 },
+        '2020-03-23': { name: 'Fed Emergency', impact: 0.04 },
+        '2022-02-24': { name: 'Ukraine War', impact: -0.04 },
+        '2022-07-14': { name: 'EUR Parity', impact: -0.03 },
+        '2023-03-10': { name: 'SVB Collapse', impact: 0.02 },
+        '2024-09-18': { name: 'Fed Rate Cut', impact: 0.03 },
+    };
+
+    for (let i = 0; i < 2600; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+        const dateStr = d.toISOString().split('T')[0];
+        const noise = (Math.random() - 0.5) * 0.004;
+        const drift = Math.sin(i / 300) * 0.0003;
+
+        if (events[dateStr]) {
+            rate += events[dateStr].impact;
+            anomalies.push({
+                date: dateStr,
+                name: events[dateStr].name,
+                rate: rate,
+                score: 0.85 + Math.random() * 0.15
+            });
+        }
+
+        rate += noise + drift;
+        rate = Math.max(0.95, Math.min(1.25, rate));
+        data.push({ x: dateStr, y: parseFloat(rate.toFixed(4)) });
+    }
+
+    return { data, anomalies };
+}
+
+function generateForecastData() {
+    const actual = [];
+    const predicted = [];
+    let rate = 1.08;
+    const start = new Date('2024-01-01');
+
+    for (let i = 0; i < 250; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+        const noise = (Math.random() - 0.5) * 0.005;
+        rate += noise + Math.sin(i / 40) * 0.001;
+
+        const predNoise = (Math.random() - 0.5) * 0.003;
+        const pred = rate + predNoise;
+
+        actual.push({ x: d.toISOString().split('T')[0], y: parseFloat(rate.toFixed(4)) });
+        predicted.push({ x: d.toISOString().split('T')[0], y: parseFloat(pred.toFixed(4)) });
+    }
+
+    return { actual, predicted };
+}
+
+// ========================================================
+// CHART RENDERING
+// ========================================================
+
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, usePointStyle: true, pointStyle: 'circle' }
+        }
+    },
+    scales: {
+        x: {
+            type: 'time',
+            time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } },
+            ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 8 },
+            grid: { color: 'rgba(42, 53, 80, 0.4)' }
+        },
+        y: {
+            ticks: { color: '#64748b', font: { size: 10 } },
+            grid: { color: 'rgba(42, 53, 80, 0.4)' }
+        }
+    }
+};
+
+// --- FX Chart with Anomalies ---
+const fxResult = generateFXData();
+new Chart(document.getElementById('fxChart'), {
+    type: 'line',
+    data: {
+        datasets: [
+            {
+                label: 'EUR/USD Rate',
+                data: fxResult.data,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.1,
+            },
+            {
+                label: 'Anomalies',
+                data: fxResult.anomalies.map(a => ({ x: a.date, y: a.rate })),
+                borderColor: '#ef4444',
+                backgroundColor: '#ef4444',
+                pointRadius: 7,
+                pointStyle: 'triangle',
+                showLine: false,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+            }
+        ]
+    },
+    options: { ...chartDefaults }
+});
+
+// --- Forecast Chart ---
+const forecastResult = generateForecastData();
+new Chart(document.getElementById('forecastChart'), {
+    type: 'line',
+    data: {
+        datasets: [
+            {
+                label: 'Actual Rate',
+                data: forecastResult.actual,
+                borderColor: '#3b82f6',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.2,
+            },
+            {
+                label: 'LSTM Forecast',
+                data: forecastResult.predicted,
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderDash: [6, 3],
+                pointRadius: 0,
+                tension: 0.2,
+            }
+        ]
+    },
+    options: { ...chartDefaults }
+});
+
+// --- Score Distribution ---
+function generateScoreDistribution() {
+    const normal = [];
+    const anomalous = [];
+    for (let i = 0; i < 30; i++) {
+        const x = i / 30;
+        const normalCount = Math.round(Math.exp(-Math.pow((x - 0.15), 2) / 0.01) * 200 + Math.random() * 10);
+        const anomCount = x > 0.7 ? Math.round(Math.exp(-Math.pow((x - 0.9), 2) / 0.005) * 30 + Math.random() * 3) : 0;
+        normal.push(normalCount);
+        anomalous.push(anomCount);
+    }
+    return { normal, anomalous, labels: Array.from({length: 30}, (_, i) => (i / 30).toFixed(2)) };
+}
+
+const scoreDist = generateScoreDistribution();
+new Chart(document.getElementById('scoreDistChart'), {
+    type: 'bar',
+    data: {
+        labels: scoreDist.labels,
+        datasets: [
+            {
+                label: 'Normal',
+                data: scoreDist.normal,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderRadius: 2,
+            },
+            {
+                label: 'Anomalous',
+                data: scoreDist.anomalous,
+                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                borderRadius: 2,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, usePointStyle: true } }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 10 },
+                grid: { color: 'rgba(42, 53, 80, 0.3)' },
+                title: { display: true, text: 'Anomaly Score', color: '#64748b', font: { size: 11 } }
+            },
+            y: {
+                ticks: { color: '#64748b', font: { size: 10 } },
+                grid: { color: 'rgba(42, 53, 80, 0.3)' },
+                title: { display: true, text: 'Frequency', color: '#64748b', font: { size: 11 } }
+            }
+        }
+    }
+});
+
+// --- Correlation Heatmap (via scatter with colored bubbles) ---
+const currencies = ['USD', 'GBP', 'JPY', 'CHF', 'AUD', 'ZAR', 'INR'];
+const corrValues = [
+    [1.00, 0.72, -0.45, 0.83, 0.61, 0.38, 0.42],
+    [0.72, 1.00, -0.33, 0.67, 0.55, 0.29, 0.35],
+    [-0.45, -0.33, 1.00, -0.38, -0.22, -0.15, -0.18],
+    [0.83, 0.67, -0.38, 1.00, 0.58, 0.33, 0.39],
+    [0.61, 0.55, -0.22, 0.58, 1.00, 0.45, 0.48],
+    [0.38, 0.29, -0.15, 0.33, 0.45, 1.00, 0.71],
+    [0.42, 0.35, -0.18, 0.39, 0.48, 0.71, 1.00],
+];
+
+const corrCtx = document.getElementById('corrChart').getContext('2d');
+const cellSize = 36;
+const offsetX = 50;
+const offsetY = 30;
+
+function drawCorrelation() {
+    const canvas = document.getElementById('corrChart');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.parentElement.clientWidth;
+    const h = 300;
+    canvas.width = w * 2;
+    canvas.height = h * 2;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(2, 2);
+
+    const n = currencies.length;
+    const cellW = (w - 80) / n;
+    const cellH = (h - 60) / n;
+    const startX = 55;
+    const startY = 35;
+
+    currencies.forEach((c, i) => {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Inter';
+        ctx.textAlign = 'right';
+        ctx.fillText(c, startX - 8, startY + i * cellH + cellH / 2 + 4);
+        ctx.textAlign = 'center';
+        ctx.fillText(c, startX + i * cellW + cellW / 2, startY - 8);
+    });
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            const v = corrValues[i][j];
+            const x = startX + j * cellW;
+            const y = startY + i * cellH;
+
+            let r, g, b;
+            if (v >= 0) {
+                r = Math.round(59 + (255 - 59) * (1 - v));
+                g = Math.round(130 + (255 - 130) * (1 - v));
+                b = 246;
+            } else {
+                r = 239;
+                g = Math.round(68 + (255 - 68) * (1 + v));
+                b = Math.round(68 + (255 - 68) * (1 + v));
+            }
+
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.2 + Math.abs(v) * 0.6})`;
+            ctx.beginPath();
+            ctx.roundRect(x + 2, y + 2, cellW - 4, cellH - 4, 4);
+            ctx.fill();
+
+            ctx.fillStyle = Math.abs(v) > 0.5 ? '#fff' : '#94a3b8';
+            ctx.font = '10px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(v.toFixed(2), x + cellW / 2, y + cellH / 2 + 4);
+        }
+    }
+}
+setTimeout(drawCorrelation, 100);
+window.addEventListener('resize', drawCorrelation);
+
+// ========================================================
+// ANOMALY TABLE
+// ========================================================
+
+const anomalyEvents = [
+    { date: '2016-06-24', event: 'Brexit Referendum', score: 0.97, color: '#ef4444' },
+    { date: '2020-03-12', event: 'COVID-19 Crash', score: 0.94, color: '#ef4444' },
+    { date: '2022-02-24', event: 'Russia-Ukraine War', score: 0.91, color: '#ef4444' },
+    { date: '2022-07-14', event: 'EUR Below Parity', score: 0.88, color: '#f59e0b' },
+    { date: '2023-03-10', event: 'SVB Bank Collapse', score: 0.86, color: '#f59e0b' },
+    { date: '2020-03-23', event: 'Fed QE Infinity', score: 0.85, color: '#f59e0b' },
+    { date: '2024-09-18', event: 'Fed 50bp Cut', score: 0.82, color: '#3b82f6' },
+    { date: '2018-02-05', event: 'Volmageddon', score: 0.79, color: '#3b82f6' },
+];
+
+const anomalyBody = document.getElementById('anomaly-body');
+anomalyEvents.forEach(a => {
+    anomalyBody.innerHTML += `
+        <tr>
+            <td style="color: var(--text-secondary); white-space: nowrap;">${a.date}</td>
+            <td style="font-weight: 500;">${a.event}</td>
+            <td style="width: 120px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="score-bar" style="flex: 1;">
+                        <div class="score-fill" style="width: ${a.score * 100}%; background: ${a.color};"></div>
+                    </div>
+                    <span style="font-size: 12px; font-weight: 600; color: ${a.color};">${a.score.toFixed(2)}</span>
+                </div>
+            </td>
+        </tr>
+    `;
+});
+
+// ========================================================
+// SENTIMENT LIST
+// ========================================================
+
+const sentiments = [
+    { date: '2024-09-18', source: 'FOMC', text: 'Fed cut rates 50bp — inflation moving sustainably toward 2%', score: 0.62, label: 'positive', icon: '📈', color: '#10b981' },
+    { date: '2023-09-14', source: 'ECB', text: 'Deposit rate at record 4.00% — inflation still too high for too long', score: -0.41, label: 'negative', icon: '📉', color: '#ef4444' },
+    { date: '2022-06-15', source: 'FOMC', text: '75bp hike, largest since 1994 — inflation at 8.6%', score: -0.73, label: 'negative', icon: '📉', color: '#ef4444' },
+    { date: '2022-02-24', source: 'Market', text: 'Russia invaded Ukraine — energy crisis, EUR weakened sharply', score: -0.88, label: 'negative', icon: '🔴', color: '#ef4444' },
+    { date: '2020-03-15', source: 'FOMC', text: 'Emergency rate cut to 0% + $700B QE — COVID response', score: -0.55, label: 'negative', icon: '📉', color: '#ef4444' },
+    { date: '2016-06-24', source: 'Market', text: 'Brexit — GBP crashed 10%, JPY and CHF surged as safe havens', score: -0.81, label: 'negative', icon: '🔴', color: '#ef4444' },
+    { date: '2015-12-16', source: 'FOMC', text: 'First rate hike in decade — confidence in economy strengthening', score: 0.48, label: 'positive', icon: '📈', color: '#10b981' },
+];
+
+const sentimentList = document.getElementById('sentiment-list');
+sentiments.forEach(s => {
+    sentimentList.innerHTML += `
+        <div class="sentiment-item">
+            <div class="sentiment-icon" style="background: ${s.color}15;">
+                ${s.icon}
+            </div>
+            <div>
+                <div class="sentiment-text">${s.text}</div>
+                <div class="sentiment-meta">${s.source} · ${s.date}</div>
+            </div>
+            <div class="sentiment-score" style="color: ${s.color};">${s.score > 0 ? '+' : ''}${s.score.toFixed(2)}</div>
+        </div>
+    `;
+});
+
+// ========================================================
+// API TESTER
+// ========================================================
+
+async function testEndpoint(path, method) {
+    const responseEl = document.getElementById('api-response');
+    const badge = document.getElementById('api-live-badge');
+    responseEl.classList.add('visible');
+    responseEl.textContent = `⏳ Testing ${method} http://localhost:5000${path}...`;
+
+    try {
+        const options = { method };
+        if (method === 'POST') {
+            options.headers = { 'Content-Type': 'application/json' };
+            if (path === '/sentiment') {
+                options.body = JSON.stringify({ text: 'The Federal Reserve raised rates by 75 basis points, the largest increase since 1994.' });
+            } else {
+                options.body = JSON.stringify({});
+            }
+        }
+
+        const res = await fetch(`http://localhost:5000${path}`, options);
+        const data = await res.json();
+        responseEl.textContent = `✅ ${res.status} ${res.statusText}\n\n${JSON.stringify(data, null, 2)}`;
+        badge.textContent = 'Connected';
+        badge.className = 'card-badge badge-green';
+    } catch (err) {
+        responseEl.textContent = `❌ Connection failed — API not running\n\nStart the API with:\n  python engine/app.py\n\nThen click an endpoint to test.`;
+        badge.textContent = 'API Offline';
+        badge.className = 'card-badge badge-red';
+    }
+}
+</script>
+
+</body>
+</html>

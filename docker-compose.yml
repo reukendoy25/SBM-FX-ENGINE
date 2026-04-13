@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  fx-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sbm-fx-engine
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./data_cache:/app/data_cache
+      - ./plots:/app/plots
+    environment:
+      - FLASK_DEBUG=false
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
